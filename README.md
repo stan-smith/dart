@@ -30,6 +30,16 @@ It's part of the [SlingShot](https://github.com/stan-smith/SlingShot) family of 
 
 ## Quick Start
 
+The easiest way to get going is the config wizard:
+
+```bash
+dart --config-new
+```
+
+It'll scan for cameras, probe capabilities, and write a config file for you. No manual TOML wrangling required.
+
+Or if you prefer to do things by hand:
+
 ```bash
 # HDMI capture card on /dev/video0
 dart --config config.hdmi.toml
@@ -40,6 +50,24 @@ dart --config config.webcam.toml
 # Re-stream an existing RTSP source
 dart --config config.rtsp.toml
 ```
+
+## Config Wizard
+
+The `--config-new` flag walks you through setup interactively:
+
+**For V4L2 sources (webcams, capture cards):**
+- Scans and lists all connected video devices
+- Probes supported formats and resolutions via `v4l2-ctl`
+- Lets you pick resolution and framerate from what the hardware actually supports
+- Writes a working config
+
+**For RTSP sources (IP cameras):**
+- Takes the RTSP URL
+- Probes the stream with `ffprobe` to detect codec, resolution, framerate
+- Asks if you want passthrough or transcode
+- Writes a working config
+
+Dependencies: `v4l-utils` for V4L2 probing, `ffmpeg` for RTSP probing.
 
 ## Configuration
 
