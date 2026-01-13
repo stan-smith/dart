@@ -1,0 +1,15 @@
+[server]
+rtsp_port = 8554
+bind_address = "0.0.0.0"
+
+[[sources]]
+name = "test"
+type = "rtsp"
+url = "rtsp://127.0.0.1:8555/stream"
+latency = 200
+transcode = true
+
+[sources.encode]
+bitrate = 2000
+preset = "veryfast"
+tune = "zerolatency"

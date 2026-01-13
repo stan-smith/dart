@@ -1,4 +1,5 @@
 mod config;
+mod config_wizard;
 mod fallback;
 mod rtsp;
 mod sources;
@@ -11,15 +12,27 @@ use std::sync::Arc;
 use tracing::{error, info, warn};
 
 #[derive(Parser)]
-#[command(name = "simplertsp")]
+#[command(name = "dart")]
 #[command(about = "Universal RTSP restreamer - accepts V4L2 and RTSP inputs")]
 struct Args {
     /// Path to configuration file
     #[arg(short, long, default_value = "config.toml")]
     config: PathBuf,
+
+    /// Interactively create a new configuration file
+    #[arg(long)]
+    config_new: bool,
 }
 
 fn main() -> Result<()> {
+    // Parse CLI args
+    let args = Args::parse();
+
+    // Handle --config-new
+    if args.config_new {
+        return config_wizard::run(&args.config);
+    }
+
     // Initialize logging
     tracing_subscriber::fmt()
         .with_env_filter(
@@ -27,9 +40,6 @@ fn main() -> Result<()> {
                 .add_directive("dart=info".parse().unwrap()),
         )
         .init();
-
-    // Parse CLI args
-    let args = Args::parse();
 
     // Initialize GStreamer
     gstreamer::init()?;
