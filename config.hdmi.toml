@@ -1,0 +1,32 @@
+# HDMI Capture Example (TC358743 HDMI-to-CSI adapter)
+# Capture HDMI input and stream via RTSP
+
+[server]
+rtsp_port = 8554
+bind_address = "0.0.0.0"
+
+[[sources]]
+name = "hdmi"
+type = "v4l2"
+device = "/dev/video0"
+
+# TC358743 requires explicit format and uses bt601 colorimetry
+format = "UYVY"
+width = 1280
+height = 720
+framerate = 30
+
+reconnect_interval = 3
+fallback = "/home/stan/simplertsp/fail.jpg"
+
+[sources.encode]
+bitrate = 2000  # kbps
+keyframe_interval = 30
+preset = "ultrafast"
+tune = "zerolatency"
+
+# Optional: Require authentication to view this stream
+# [sources.auth]
+# enabled = true
+# username = "viewer"
+# password = "secret"

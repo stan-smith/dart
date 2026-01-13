@@ -1,0 +1,24 @@
+# RTSP Source Example
+# Relay an existing RTSP stream to a new RTSP endpoint
+
+[server]
+rtsp_port = 8554
+bind_address = "0.0.0.0"
+
+[[sources]]
+name = "camera"
+type = "rtsp"
+url = "rtsp://192.168.1.100:554/stream1"
+# username = "admin"
+# password = "password"
+latency = 200
+reconnect_interval = 5
+fallback = "/path/to/fallback.jpg"
+
+# Optional: Re-encode the stream (passthrough by default)
+# transcode = true
+# [sources.encode]
+# bitrate = 1000  # kbps
+# keyframe_interval = 30
+# preset = "ultrafast"
+# tune = "zerolatency"

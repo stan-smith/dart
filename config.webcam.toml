@@ -1,0 +1,25 @@
+# Webcam Example
+# Capture from a standard USB webcam and stream via RTSP
+
+[server]
+rtsp_port = 8554
+bind_address = "0.0.0.0"
+
+[[sources]]
+name = "webcam"
+type = "v4l2"
+device = "/dev/video0"
+
+# Standard webcams don't need explicit format (auto-negotiates)
+width = 1920
+height = 1080
+framerate = 30
+
+reconnect_interval = 5
+fallback = "/path/to/fallback.jpg"
+
+[sources.encode]
+bitrate = 4000  # kbps
+keyframe_interval = 30
+preset = "ultrafast"
+tune = "zerolatency"

@@ -1,0 +1,18 @@
+[package]
+name = "dart"
+version = "0.1.0"
+edition = "2021"
+description = "Universal RTSP restreamer - accepts V4L2 and RTSP inputs and outputs RTSP streams"
+
+[dependencies]
+gstreamer = "0.23"
+gstreamer-app = "0.23"
+gstreamer-rtsp-server = "0.23"
+glib = "0.20"
+toml = "0.8"
+serde = { version = "1.0", features = ["derive"] }
+clap = { version = "4", features = ["derive"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+anyhow = "1.0"
+ctrlc = "3.4"
