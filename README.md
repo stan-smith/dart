@@ -43,28 +43,54 @@ dart --config config.rtsp.toml
 
 ## Configuration
 
-Dart is highly configurable with sensible defaults. You probably won't need to touch most of it.
+Dart uses TOML config files. Here's an example for an HDMI capture card:
 
 ```toml
-# config.hdmi.toml
-[input]
+[server]
+rtsp_port = 8554
+bind_address = "0.0.0.0"
+
+[[sources]]
+name = "hdmi"
 type = "v4l2"
 device = "/dev/video0"
+format = "UYVY"           # For HDMI capture cards (TC358743, etc.)
+width = 1280
+height = 720
+framerate = 30
 
-[output]
-type = "rtsp"
-port = 8554
-path = "/stream"
+[sources.encode]
+bitrate = 2000            # kbps
+keyframe_interval = 30
+preset = "ultrafast"
+tune = "zerolatency"
+```
 
-[transcode]
-codec = "h264"
+For a standard webcam, you can omit the `format` field:
+
+```toml
+[[sources]]
+name = "webcam"
+type = "v4l2"
+device = "/dev/video0"
 width = 1920
 height = 1080
-fps = 25
+framerate = 30
+
+[sources.encode]
 bitrate = 4000
 ```
 
-All fields have sane defaults. A minimal config is just a few lines.
+For relaying an existing RTSP stream:
+
+```toml
+[[sources]]
+name = "camera"
+type = "rtsp"
+url = "rtsp://192.168.1.100:554/stream1"
+latency = 200
+fallback = "/path/to/fallback.jpg"
+```
 
 ## Why GStreamer?
 

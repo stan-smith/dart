@@ -1,0 +1,19 @@
+# Huddly IQ Webcam
+[server]
+rtsp_port = 8554
+bind_address = "0.0.0.0"
+
+[[sources]]
+name = "huddly"
+type = "v4l2"
+device = "/dev/video4"
+width = 1920
+height = 1080
+framerate = 30
+reconnect_interval = 5
+
+[sources.encode]
+bitrate = 4000  # kbps
+keyframe_interval = 30
+preset = "ultrafast"
+tune = "zerolatency"
