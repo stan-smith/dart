@@ -16,7 +16,6 @@ height = 1080
 framerate = 30
 
 reconnect_interval = 5
-fallback = "/path/to/fallback.jpg"
 
 [sources.encode]
 bitrate = 4000  # kbps
