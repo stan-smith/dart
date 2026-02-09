@@ -80,6 +80,13 @@ pub enum SourceType {
     Rtsp,
 }
 
+/// Output codec — determined at runtime based on MPP availability
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OutputCodec {
+    H264,
+    H265,
+}
+
 /// Encoding configuration
 #[derive(Debug, Deserialize, Clone)]
 pub struct EncodeConfig {

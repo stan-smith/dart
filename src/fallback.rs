@@ -1,6 +1,6 @@
 //! Fallback image encoding and management
 //!
-//! Encodes a static image to H.264 at startup for use when sources disconnect.
+//! Encodes a static image to H.264/H.265 at startup for use when sources disconnect.
 
 use anyhow::{Context, Result};
 use gstreamer::prelude::*;
@@ -12,13 +12,13 @@ use tracing::{debug, info};
 /// Pre-encoded fallback frame data
 #[derive(Clone)]
 pub struct FallbackFrame {
-    /// H.264 encoded keyframe data
+    /// Encoded keyframe data (H.264 or H.265 depending on MPP availability)
     pub data: Arc<Vec<u8>>,
 }
 
 impl FallbackFrame {
-    /// Encode an image file to H.264 fallback frame
-    pub fn from_image<P: AsRef<Path>>(path: P) -> Result<Self> {
+    /// Encode an image file to a fallback frame (H.265 if MPP available, H.264 otherwise)
+    pub fn from_image<P: AsRef<Path>>(path: P, mpp: bool) -> Result<Self> {
         let path = path.as_ref();
         let path_str = path
             .to_str()
@@ -29,20 +29,33 @@ impl FallbackFrame {
         // Initialize GStreamer if not already done
         gstreamer::init().ok();
 
-        // Pipeline to encode image to H.264 keyframe
-        // filesrc -> decodebin -> videoconvert -> x264enc (single keyframe) -> h264parse -> appsink
-        let pipeline_str = format!(
-            "filesrc location=\"{path}\" \
-             ! decodebin \
-             ! videoconvert \
-             ! videoscale \
-             ! video/x-raw,width=640,height=480 \
-             ! x264enc tune=stillimage key-int-max=1 \
-             ! video/x-h264,stream-format=byte-stream,alignment=au \
-             ! h264parse \
-             ! appsink name=sink emit-signals=false sync=false",
-            path = path_str
-        );
+        let pipeline_str = if mpp {
+            // MPP path: encode fallback image to H.265
+            format!(
+                "filesrc location=\"{path}\" \
+                 ! decodebin ! videoconvert ! videoscale \
+                 ! video/x-raw,width=640,height=480 \
+                 ! mpph265enc gop=1 \
+                 ! video/x-h265,stream-format=byte-stream,alignment=au \
+                 ! h265parse \
+                 ! appsink name=sink emit-signals=false sync=false",
+                path = path_str
+            )
+        } else {
+            // x264 path (existing behavior)
+            format!(
+                "filesrc location=\"{path}\" \
+                 ! decodebin \
+                 ! videoconvert \
+                 ! videoscale \
+                 ! video/x-raw,width=640,height=480 \
+                 ! x264enc tune=stillimage key-int-max=1 \
+                 ! video/x-h264,stream-format=byte-stream,alignment=au \
+                 ! h264parse \
+                 ! appsink name=sink emit-signals=false sync=false",
+                path = path_str
+            )
+        };
 
         debug!("Fallback pipeline: {}", pipeline_str);
 

@@ -1,0 +1,15 @@
+[server]
+rtsp_port = 8554
+bind_address = "0.0.0.0"
+
+[[sources]]
+name = "hdmi"
+type = "v4l2"
+device = "/dev/video0"
+width = 1920
+height = 1080
+framerate = 30
+
+[sources.encode]
+bitrate = 4000
+keyframe_interval = 60

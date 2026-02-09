@@ -12,6 +12,11 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tracing::{debug, error, info, warn};
 
+/// Check if Rockchip MPP H.265 encoder is available
+pub fn mpp_available() -> bool {
+    gstreamer::ElementFactory::find("mpph265enc").is_some()
+}
+
 /// Source state
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SourceState {
@@ -31,6 +36,7 @@ pub struct Source {
     fallback: Option<FallbackFrame>,
     state: Arc<Mutex<SourceState>>,
     running: Arc<AtomicBool>,
+    mpp: bool,
 }
 
 impl Source {
@@ -39,6 +45,7 @@ impl Source {
         config: SourceConfig,
         frame_tx: Arc<Mutex<Option<FrameSender>>>,
         fallback: Option<FallbackFrame>,
+        mpp: bool,
     ) -> Result<Self> {
         Ok(Self {
             name: config.name.clone(),
@@ -47,6 +54,7 @@ impl Source {
             fallback,
             state: Arc::new(Mutex::new(SourceState::Stopped)),
             running: Arc::new(AtomicBool::new(false)),
+            mpp,
         })
     }
 
@@ -263,8 +271,8 @@ impl Source {
     /// Create and run the pipeline, returns when pipeline ends or errors
     fn create_and_run_pipeline(&self) -> Result<()> {
         let pipeline = match self.config.source_type {
-            SourceType::V4l2 => v4l2::create_pipeline(&self.config)?,
-            SourceType::Rtsp => rtsp::create_pipeline(&self.config)?,
+            SourceType::V4l2 => v4l2::create_pipeline(&self.config, self.mpp)?,
+            SourceType::Rtsp => rtsp::create_pipeline(&self.config, self.mpp)?,
         };
 
         // Set up appsink callbacks
@@ -459,4 +467,18 @@ pub fn appsink_config() -> &'static str {
 /// H.264 output caps
 pub fn h264_caps() -> &'static str {
     "video/x-h264,stream-format=byte-stream,alignment=au"
+}
+
+/// H.265 output caps
+pub fn h265_caps() -> &'static str {
+    "video/x-h265,stream-format=byte-stream,alignment=au"
+}
+
+/// Build MPP H.265 encoder pipeline string
+pub fn build_mpp_h265_encoder_string(encode: &EncodeConfig) -> String {
+    format!(
+        "mpph265enc bps={} gop={}",
+        encode.bitrate * 1000, // config is kbps, MPP wants bps
+        encode.keyframe_interval,
+    )
 }

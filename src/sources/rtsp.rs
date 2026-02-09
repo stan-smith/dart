@@ -1,17 +1,18 @@
 //! RTSP source - receives streams from other RTSP servers
 //!
-//! Passthrough: rtspsrc -> rtph264depay -> h264parse -> appsink
-//! Transcode:   rtspsrc -> rtph264depay -> avdec_h264 -> x264enc -> h264parse -> appsink
+//! Passthrough:       rtspsrc -> rtph264depay -> h264parse -> appsink
+//! Transcode (x264):  rtspsrc -> rtph264depay -> avdec_h264 -> x264enc -> h264parse -> appsink
+//! Transcode (MPP):   rtspsrc -> rtph264depay -> mppvideodec -> mpph265enc -> h265parse -> appsink
 
 use crate::config::SourceConfig;
 use anyhow::Result;
 use gstreamer::prelude::*;
 use tracing::debug;
 
-use super::{appsink_config, build_encoder_string, h264_caps};
+use super::{appsink_config, build_encoder_string, build_mpp_h265_encoder_string, h264_caps, h265_caps};
 
 /// Create RTSP source pipeline
-pub fn create_pipeline(config: &SourceConfig) -> Result<gstreamer::Pipeline> {
+pub fn create_pipeline(config: &SourceConfig, mpp: bool) -> Result<gstreamer::Pipeline> {
     let url = config
         .url
         .as_ref()
@@ -30,23 +31,46 @@ pub fn create_pipeline(config: &SourceConfig) -> Result<gstreamer::Pipeline> {
 
     let pipeline_str = if config.transcode {
         let encode = config.encode_config();
-        let encoder = build_encoder_string(&encode);
 
-        format!(
-            "{rtspsrc} \
-             ! rtph264depay \
-             ! avdec_h264 \
-             ! {encoder} \
-             ! {h264_caps} \
-             ! h264parse \
-             ! {h264_caps} \
-             ! {appsink}",
-            rtspsrc = rtspsrc,
-            encoder = encoder,
-            h264_caps = h264_caps(),
-            appsink = appsink_config(),
-        )
+        if mpp {
+            // MPP transcode: hardware decode + hardware H.265 encode
+            let encoder = build_mpp_h265_encoder_string(&encode);
+
+            format!(
+                "{rtspsrc} \
+                 ! rtph264depay \
+                 ! mppvideodec \
+                 ! {encoder} \
+                 ! {h265_caps} \
+                 ! h265parse \
+                 ! {h265_caps} \
+                 ! {appsink}",
+                rtspsrc = rtspsrc,
+                encoder = encoder,
+                h265_caps = h265_caps(),
+                appsink = appsink_config(),
+            )
+        } else {
+            // x264 transcode (existing behavior)
+            let encoder = build_encoder_string(&encode);
+
+            format!(
+                "{rtspsrc} \
+                 ! rtph264depay \
+                 ! avdec_h264 \
+                 ! {encoder} \
+                 ! {h264_caps} \
+                 ! h264parse \
+                 ! {h264_caps} \
+                 ! {appsink}",
+                rtspsrc = rtspsrc,
+                encoder = encoder,
+                h264_caps = h264_caps(),
+                appsink = appsink_config(),
+            )
+        }
     } else {
+        // Passthrough - always H.264, no changes needed
         format!(
             "{rtspsrc} \
              ! rtph264depay \
